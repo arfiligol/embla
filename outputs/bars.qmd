@@ -1,0 +1,26 @@
+---
+title: "Bars and markers"
+subtitle: "Screen and print"
+jupyter: python3
+---
+
+Mean T1 and T2* for four example qubits. Measured values include cooldown
+scatter. Squares are a slightly lower simulation. Diamonds are the 2 T1
+coherence limit. Screen keeps hover. Print is static. The page mode selects
+the matching figure.
+
+## Screen
+
+```{python}
+#| renderings: [light, dark]
+from review import bars, for_renderings, show
+
+for_renderings(lambda appearance: show(bars(), reading="screen", appearance=appearance))
+```
+
+## Print
+
+```{python}
+#| renderings: [light, dark]
+for_renderings(lambda appearance: show(bars(), reading="print", appearance=appearance))
+```

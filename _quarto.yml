@@ -1,0 +1,54 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: Embla
+  search: false
+  navbar:
+    left:
+      - href: index.qmd
+        text: Overview
+      - href: outputs/index.qmd
+        text: Outputs
+
+  sidebar:
+    - id: overview
+      title: "Pages"
+      style: docked
+      collapse-level: 2
+      contents:
+        - text: "Overview"
+          href: index.qmd
+    - id: outputs
+      title: "Pages"
+      style: docked
+      collapse-level: 2
+      contents:
+        - text: "Overview"
+          href: outputs/index.qmd
+        - text: "Lines"
+          href: outputs/lines.qmd
+        - text: "Bars and markers"
+          href: outputs/bars.qmd
+        - text: "Heatmaps"
+          href: outputs/heatmaps.qmd
+        - text: "Table"
+          href: outputs/table.qmd
+        - text: "Theme anchors"
+          href: outputs/themes.qmd
+
+format:
+  qdk-html:
+    toc: true
+    toc-title: "Sections"
+    toc-location: right
+    code-copy: true
+    code-fold: true
+    code-summary: "Source"
+    code-overflow: wrap
+    smooth-scroll: true
+
+execute:
+  echo: true
+  warning: false

@@ -1,0 +1,29 @@
+---
+title: "Lines"
+subtitle: "Screen and print"
+jupyter: python3
+---
+
+The same Ramsey fringes at four detunings,
+
+P = 1/2 + 1/2 exp(−t / T₂*) cos(2π δ t),
+
+with T₂* = 3 µs and shot noise for 2000 repetitions. These are synthetic
+examples, not a device measurement. Screen is interactive. Print is static.
+The page's light or dark mode selects the matching figure.
+
+## Screen
+
+```{python}
+#| renderings: [light, dark]
+from review import for_renderings, lines, show
+
+for_renderings(lambda appearance: show(lines(), reading="screen", appearance=appearance))
+```
+
+## Print
+
+```{python}
+#| renderings: [light, dark]
+for_renderings(lambda appearance: show(lines(), reading="print", appearance=appearance))
+```

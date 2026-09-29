@@ -1,0 +1,26 @@
+---
+title: "Embla"
+subtitle: "Review Plotly outputs"
+---
+
+This site is the review surface for Plotly figures and `go.Table`. It follows
+the same local reading pattern as Askr, the Quarto reading page, and it only
+carries Plotly outputs.
+
+Embla owns appearance, interaction, and output settings. Consumer work owns
+the scientific data, units, normalization, axis ranges, and domain calculations.
+The Python API, profile names, packaging, and failure behavior are still
+**CONVERGING** and are not accepted here.
+
+## What to review
+
+The [Outputs](outputs/index.qmd) pages use synthetic traces from standard
+qubit formulas, so the figure chrome can be judged on a realistic diagram:
+
+- lines, for a color sequence and overlapping curves
+- bars and markers, for a short comparison and semantic colors
+- heatmaps, for a continuous scale and a diverging scale
+- a table, for header and cell text
+- theme anchors, for the slide background as paper and the slide surface as the plot area, in light and dark
+
+Each of the first four pages shows a screen reading and a print reading. The page's light or dark mode selects the matching figure.

@@ -1,0 +1,24 @@
+---
+title: "Table"
+subtitle: "Screen and print"
+jupyter: python3
+---
+
+Example coherence numbers used by the other diagrams: f01, T1, and T2*.
+Not a measured device. The page mode selects the matching table.
+
+## Screen
+
+```{python}
+#| renderings: [light, dark]
+from review import for_renderings, table
+
+for_renderings(lambda appearance: table(appearance, "screen").show(config={"displaylogo": False}))
+```
+
+## Print
+
+```{python}
+#| renderings: [light, dark]
+for_renderings(lambda appearance: table(appearance, "print").show(config={"staticPlot": True, "displayModeBar": False}))
+```

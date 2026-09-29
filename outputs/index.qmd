@@ -1,0 +1,14 @@
+---
+title: "Plotly outputs"
+subtitle: "Visual review specimens"
+---
+
+These pages preview the same figure in two readings. Screen is interactive, for
+a web page or a notebook. Print is static, for a thesis, a paper, a static
+image, or a PDF. Each reading has a light and a dark figure.
+
+- [Lines](lines.qmd)
+- [Bars and markers](bars.qmd)
+- [Heatmaps](heatmaps.qmd)
+- [Table](table.qmd)
+- [Theme anchors](themes.qmd)

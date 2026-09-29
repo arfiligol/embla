@@ -1,0 +1,49 @@
+---
+title: "Heatmaps"
+subtitle: "Screen and print"
+jupyter: python3
+---
+
+Each scale is its own figure. The chevron is the driven two-level population
+
+P = (Ω² / Ω_R²) sin²(Ω_R t / 2) exp(−Γ t), Ω_R = √(Ω² + δ²),
+
+with Ω/2π = 20 MHz and shot noise. ⟨Z⟩ = 1 − 2P uses a diverging scale.
+Synthetic example, not a measurement. The page mode selects the matching figure.
+
+## Screen
+
+### Rabi chevron
+
+```{python}
+#| renderings: [light, dark]
+from review import for_renderings, heatmaps, show
+
+def heatmap(name):
+    return next(fig for fig in heatmaps() if fig.layout.title.text == name)
+
+for_renderings(lambda appearance: show(heatmap("Rabi chevron"), reading="screen", appearance=appearance))
+```
+
+### ⟨Z⟩ chevron
+
+```{python}
+#| renderings: [light, dark]
+for_renderings(lambda appearance: show(heatmap("⟨Z⟩ chevron"), reading="screen", appearance=appearance))
+```
+
+## Print
+
+### Rabi chevron
+
+```{python}
+#| renderings: [light, dark]
+for_renderings(lambda appearance: show(heatmap("Rabi chevron"), reading="print", appearance=appearance))
+```
+
+### ⟨Z⟩ chevron
+
+```{python}
+#| renderings: [light, dark]
+for_renderings(lambda appearance: show(heatmap("⟨Z⟩ chevron"), reading="print", appearance=appearance))
+```

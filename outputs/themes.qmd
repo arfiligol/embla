@@ -1,0 +1,80 @@
+---
+title: "Theme anchors"
+subtitle: "Paper and plot area"
+jupyter: python3
+---
+
+The curve on every theme is one on-resonance Rabi oscillation,
+P = sin²(Ω t / 2) exp(−Γ t). The title stays inside the figure. The page mode
+selects the light or dark slide pair, including the static print rendering.
+
+```{python}
+from review import anchors, for_renderings
+
+def one(name, appearance, reading):
+    return next(fig for fig in anchors(appearance, reading) if fig.layout.title.text == name)
+
+def present(name, reading):
+    config = {"staticPlot": True, "displayModeBar": False} if reading == "print" else {"displaylogo": False}
+    for_renderings(lambda appearance: one(name, appearance, reading).show(config=config))
+```
+
+## Screen
+
+### Tech Slate
+
+```{python}
+#| renderings: [light, dark]
+present("Tech Slate", "screen")
+```
+
+### Spring Glass
+
+```{python}
+#| renderings: [light, dark]
+present("Spring Glass", "screen")
+```
+
+### Nordic Calm
+
+```{python}
+#| renderings: [light, dark]
+present("Nordic Calm", "screen")
+```
+
+### Coffee Terminal
+
+```{python}
+#| renderings: [light, dark]
+present("Coffee Terminal", "screen")
+```
+
+## Print
+
+### Tech Slate
+
+```{python}
+#| renderings: [light, dark]
+present("Tech Slate", "print")
+```
+
+### Spring Glass
+
+```{python}
+#| renderings: [light, dark]
+present("Spring Glass", "print")
+```
+
+### Nordic Calm
+
+```{python}
+#| renderings: [light, dark]
+present("Nordic Calm", "print")
+```
+
+### Coffee Terminal
+
+```{python}
+#| renderings: [light, dark]
+present("Coffee Terminal", "print")
+```
