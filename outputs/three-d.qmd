@@ -1,0 +1,39 @@
+---
+title: "3D"
+subtitle: "Axes, geometry, and animation"
+jupyter: python3
+page-layout: full
+toc: false
+---
+
+The same Bloch sphere animation appears with and without coordinate axes.
+
+```{python}
+#| include: false
+from quantum import bloch
+from design import CONFIG
+from review import display_figure, for_renderings
+```
+
+## Bloch sphere animation
+
+Play a complete ideal rotation about x, or drag the slider to select its angle.
+Drag the sphere to rotate the view. The trajectory is computed from
+**r = (0, −sin α, cos α)** for **Rₓ(α)|0⟩**.
+This is a single-qubit example; the report's |10⟩ / |01⟩ exchange subspace is a
+different physical interpretation.
+
+::: {.panel-tabset}
+### Without axes
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for_renderings(lambda mode: display_figure(bloch(dark=mode == "dark", axes=False), config=CONFIG))
+```
+### With axes
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for_renderings(lambda mode: display_figure(bloch(dark=mode == "dark", axes=True), config=CONFIG))
+```
+:::

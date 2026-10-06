@@ -1,14 +1,18 @@
 ---
-title: "Plotly outputs"
-subtitle: "Visual review specimens"
+title: "Plot Demo"
+subtitle: "Browse presentation recipes by chart type"
 ---
 
-These pages preview the same figure in two readings. Screen is interactive, for
-a web page or a notebook. Print is static, for a thesis, a paper, a static
-image, or a PDF. Each reading has a light and a dark figure.
+Each page collects applications of one chart type. The page appearance switches
+between matching light and dark figures.
 
-- [Lines](lines.qmd)
-- [Bars and markers](bars.qmd)
-- [Heatmaps](heatmaps.qmd)
-- [Table](table.qmd)
-- [Theme anchors](themes.qmd)
+- [Lines](lines.qmd): Ramsey fringes, dense lines, pulse sequences, and decay envelopes
+- [Bars and markers](bars.qmd): bars and markers
+- [Heatmaps](heatmaps.qmd): continuous and diverging scales
+- [Table](table.qmd): headers and cells
+- [3D](three-d.qmd): Bloch sphere animations with and without axes
+- [Diagrams](diagrams.qmd): control timelines, waveforms, spectra, and physical concepts
+- [Colors](themes.qmd): 5-, 10-, and 20-color sequences, cycling, and background samples
+
+Copy the shared layout recipe and config into your project from
+[Usage Tutorial](../usage.qmd).

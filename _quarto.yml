@@ -1,6 +1,10 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
+    - "outputs/*.qmd"
+    - "!outputs/palettes.qmd"
 
 website:
   title: Embla
@@ -10,7 +14,9 @@ website:
       - href: index.qmd
         text: Overview
       - href: outputs/index.qmd
-        text: Outputs
+        text: Plot Demo
+      - href: usage.qmd
+        text: Usage Tutorial
 
   sidebar:
     - id: overview
@@ -35,11 +41,18 @@ website:
           href: outputs/heatmaps.qmd
         - text: "Table"
           href: outputs/table.qmd
-        - text: "Theme anchors"
+        - text: "3D"
+          href: outputs/three-d.qmd
+        - text: "Diagrams"
+          href: outputs/diagrams.qmd
+        - text: "Colors"
           href: outputs/themes.qmd
+
+lang: en
 
 format:
   qdk-html:
+    include-after-body: outputs/quantum-view.html
     toc: true
     toc-title: "Sections"
     toc-location: right

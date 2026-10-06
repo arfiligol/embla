@@ -4,9 +4,9 @@ subtitle: "Screen and print"
 jupyter: python3
 ---
 
-Mean T1 and T2* for four example qubits. Measured values include cooldown
-scatter. Squares are a slightly lower simulation. Diamonds are the 2 T1
-coherence limit. Screen keeps hover. Print is static. The page mode selects
+Illustrative mean T1 and T2* values for four example qubits, with synthetic
+cooldown scatter. Squares show a slightly lower illustrative simulation series.
+Diamonds show the 2 T1 coherence limit. These are not device measurements. Screen keeps hover. Print is static. The page mode selects
 the matching figure.
 
 ## Screen
@@ -23,4 +23,15 @@ for_renderings(lambda appearance: show(bars(), reading="screen", appearance=appe
 ```{python}
 #| renderings: [light, dark]
 for_renderings(lambda appearance: show(bars(), reading="print", appearance=appearance))
+```
+
+## Grouped bars
+
+Illustrative values use the current Embla color sequence.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+from gallery import show as show_candidate
+for_renderings(lambda mode: show_candidate("bars", mode))
 ```

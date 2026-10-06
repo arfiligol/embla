@@ -1,80 +1,155 @@
 ---
-title: "Theme anchors"
-subtitle: "Paper and plot area"
+title: "Colors"
+subtitle: "5-, 10-, and 20-color sequences, native cycling, and backgrounds"
 jupyter: python3
 ---
 
-The curve on every theme is one on-resonance Rabi oscillation,
-P = sin²(Ω t / 2) exp(−Γ t). The title stays inside the figure. The page mode
-selects the light or dark slide pair, including the static print rendering.
+Three sequences follow the same indigo, cyan, green, yellow, orange, and red
+family in light and dark appearances. Light mode keeps bright greens and yellows
+and warm orange-reds. The recipe samples linear RGB interpolation between six
+reference colors at equal intervals. The five-color midpoint falls between green
+and yellow; the longer sequences include more neighboring transitions.
+
+Switch the page appearance to compare treatments. Choose the sequence with
+`apply_layout(fig, appearance, colors=5)`. Plotly cycles from the first color
+when there are more series than colors. These remain **CONVERGING** appearance
+candidates. All analytical curves are illustrative, not measurements.
 
 ```{python}
-from review import anchors, for_renderings
+#| include: false
+import math
+from IPython.display import HTML, display
+import plotly.graph_objects as go
+from design import CONFIG, SEQUENCES, apply_layout
+from review import anchors, display_figure
 
-def one(name, appearance, reading):
-    return next(fig for fig in anchors(appearance, reading) if fig.layout.title.text == name)
+def swatches(appearance, size):
+    colors = SEQUENCES[appearance][size]
+    items = "".join(
+        f'<div style="flex:1 1 5rem;min-width:5rem">'
+        f'<div style="height:2.5rem;background:{color};border-radius:.3rem"></div>'
+        f'<div style="font-size:.8rem;padding:.3rem 0">{index + 1} · {color}</div>'
+        '</div>'
+        for index, color in enumerate(colors)
+    )
+    return HTML(f'<div role="group" aria-label="{appearance} {size} colors" '
+                f'style="display:flex;flex-wrap:wrap;gap:.7rem">{items}</div>')
 
-def present(name, reading):
-    config = {"staticPlot": True, "displayModeBar": False} if reading == "print" else {"displaylogo": False}
-    for_renderings(lambda appearance: one(name, appearance, reading).show(config=config))
+def cycling(appearance, size, count):
+    x = [index / 80 for index in range(161)]
+    fig = go.Figure()
+    for index in range(count):
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=[index + 0.3 * math.cos(2 * math.pi * value + index / 3)
+               for value in x],
+            mode="lines", name=f"Series {index + 1}",
+        ))
+    fig.update_layout(title=f"{size} colors · {count} analytical series",
+                      xaxis_title="Illustrative parameter",
+                      yaxis_title="Illustrative offset + cosine")
+    return apply_layout(fig, appearance, colors=size, kind="cartesian")
 ```
 
-## Screen
+## 5 colors
 
-### Tech Slate
+Seven curves: series 6 and 7 reuse colors 1 and 2. The swatches list the current
+hexadecimal values.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    display(swatches(appearance, 5))
+```
 
 ```{python}
 #| renderings: [light, dark]
-present("Tech Slate", "screen")
+for appearance in ("light", "dark"):
+    display_figure(cycling(appearance, size=5, count=7), config=CONFIG)
+```
+
+## 10 colors
+
+Twelve curves: series 11 and 12 reuse colors 1 and 2.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    display(swatches(appearance, 10))
+```
+
+```{python}
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    display_figure(cycling(appearance, size=10, count=12), config=CONFIG)
+```
+
+## 20 colors
+
+Twenty-two curves: series 21 and 22 reuse colors 1 and 2. Neighboring colors
+are closer in dense figures; use native hover and legend toggles to identify
+series. The figure author should explicitly define any semantic line styles.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    display(swatches(appearance, 20))
+```
+
+```{python}
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    display_figure(cycling(appearance, size=20, count=22), config=CONFIG)
+```
+
+## Paper and plot backgrounds
+
+Four presentation backgrounds remain as pairing references: `paper_bgcolor`
+is the outer figure background and `plot_bgcolor` is the plotting surface.
+Each sample uses one accent color; the sequence order above is unchanged.
+The curves are analytical Rabi oscillation examples, not device measurements.
+
+::: {.panel-tabset}
+### Tech Slate
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    display_figure(next(fig for fig in anchors(appearance) if fig.layout.title.text == "Tech Slate"), config=CONFIG)
 ```
 
 ### Spring Glass
 
 ```{python}
+#| echo: false
 #| renderings: [light, dark]
-present("Spring Glass", "screen")
+for appearance in ("light", "dark"):
+    display_figure(next(fig for fig in anchors(appearance) if fig.layout.title.text == "Spring Glass"), config=CONFIG)
 ```
 
 ### Nordic Calm
 
 ```{python}
+#| echo: false
 #| renderings: [light, dark]
-present("Nordic Calm", "screen")
+for appearance in ("light", "dark"):
+    display_figure(next(fig for fig in anchors(appearance) if fig.layout.title.text == "Nordic Calm"), config=CONFIG)
 ```
 
 ### Coffee Terminal
 
 ```{python}
+#| echo: false
 #| renderings: [light, dark]
-present("Coffee Terminal", "screen")
+for appearance in ("light", "dark"):
+    display_figure(next(fig for fig in anchors(appearance) if fig.layout.title.text == "Coffee Terminal"), config=CONFIG)
 ```
+:::
 
-## Print
-
-### Tech Slate
-
-```{python}
-#| renderings: [light, dark]
-present("Tech Slate", "print")
-```
-
-### Spring Glass
-
-```{python}
-#| renderings: [light, dark]
-present("Spring Glass", "print")
-```
-
-### Nordic Calm
-
-```{python}
-#| renderings: [light, dark]
-present("Nordic Calm", "print")
-```
-
-### Coffee Terminal
-
-```{python}
-#| renderings: [light, dark]
-present("Coffee Terminal", "print")
-```
+See [Usage Tutorial](../usage.qmd) to copy the current recipe, choose a sequence,
+and assign consistent series colors across figures. Heatmaps of continuous values
+still need a `colorscale` appropriate to the data.

@@ -11,14 +11,14 @@ Not a measured device. The page mode selects the matching table.
 
 ```{python}
 #| renderings: [light, dark]
-from review import for_renderings, table
+from review import display_figure, for_renderings, table
 
-for_renderings(lambda appearance: table(appearance, "screen").show(config={"displaylogo": False}))
+for_renderings(lambda appearance: display_figure(table(appearance, "screen"), config={"displaylogo": False}))
 ```
 
 ## Print
 
 ```{python}
 #| renderings: [light, dark]
-for_renderings(lambda appearance: table(appearance, "print").show(config={"staticPlot": True, "displayModeBar": False}))
+for_renderings(lambda appearance: display_figure(table(appearance, "print"), config={"staticPlot": True, "displayModeBar": False}))
 ```

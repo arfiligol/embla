@@ -1,0 +1,77 @@
+<script>
+// Hidden appearance/tab panels have no width. Resize native Plotly canvases
+// when their containers become visible so 3D and SVG plots use the real space.
+(() => {
+  const legendModes = new WeakMap();
+  const figureSizes = new WeakMap();
+  const boundPlots = new WeakSet();
+  const observer = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+        requestAnimationFrame(async () => {
+          const plot = entry.target;
+          const responsive = plot.layout.meta?.embla_responsive;
+          if (responsive) {
+            const narrow = entry.contentRect.width < responsive.breakpoint;
+            if (legendModes.get(plot) !== narrow) {
+              legendModes.set(plot, narrow);
+              await Plotly.relayout(plot, narrow ? responsive.narrow : responsive.wide);
+            }
+          }
+          const sizing = plot.layout.meta?.embla_sizing;
+          if (sizing) {
+            const available = entry.contentRect.width - sizing.sideMargins;
+            let rows = sizing.itemWidths.length ? 1 : 0;
+            let occupied = 0;
+            for (const width of sizing.itemWidths) {
+              if (occupied && occupied + width > available) {
+                rows += 1;
+                occupied = 0;
+              }
+              occupied += width;
+            }
+            const height = sizing.height + Math.max(0, rows - 1) * sizing.rowHeight;
+            const width = entry.contentRect.width;
+            const sizeKey = `${width}:${height}`;
+            if (figureSizes.get(plot) !== sizeKey) {
+              figureSizes.set(plot, sizeKey);
+              // Setting height disables native autosizing: carry container width too.
+              await Plotly.relayout(plot, {width, height,
+                'modebar.orientation': width < sizing.toolbarBreakpoint ? 'v' : 'h'});
+            }
+          }
+          await Plotly.Plots.resize(plot);
+          if (sizing) {
+            const toolbar = plot.querySelector('.modebar');
+            if (toolbar) {
+              if (entry.contentRect.width < sizing.toolbarBreakpoint) {
+                toolbar.style.top = `${sizing.toolbarTop}px`;
+              } else {
+                toolbar.style.removeProperty('top');
+              }
+            }
+          }
+          // WebGL scenes also need a redraw after a hidden panel is revealed.
+          if (plot.layout.meta?.embla_kind === 'bloch') await Plotly.redraw(plot);
+        });
+      }
+    }
+  });
+  function bindPlot(plot) {
+    // Quarto initializes theme-specific output panels after page load.
+    if (boundPlots.has(plot) || !plot.layout || !plot.on) return;
+    boundPlots.add(plot);
+    observer.observe(plot);
+  }
+  const discoverPlots = () => document.querySelectorAll('.js-plotly-plot').forEach(bindPlot);
+  const panels = new MutationObserver(changes => {
+    if (changes.some(change =>
+      change.target.matches?.('.js-plotly-plot') ||
+      [...change.addedNodes].some(node => node.matches?.('.js-plotly-plot') || node.querySelector?.('.js-plotly-plot'))
+    )) requestAnimationFrame(discoverPlots);
+  });
+  panels.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ['class']});
+  discoverPlots();
+  window.addEventListener('load', discoverPlots, {once: true});
+})();
+</script>

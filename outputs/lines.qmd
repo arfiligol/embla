@@ -1,22 +1,25 @@
 ---
 title: "Lines"
-subtitle: "Screen and print"
+subtitle: "Lines, markers, and stepped waveforms"
 jupyter: python3
 ---
 
 The same Ramsey fringes at four detunings,
 
-P = 1/2 + 1/2 exp(−t / T₂*) cos(2π δ t),
+$$
+P_{|1\rangle}(t)=\frac12+\frac12\exp(-t/T_2^{*})\cos(2\pi\delta t)
+$$
 
-with T₂* = 3 µs and shot noise for 2000 repetitions. These are synthetic
+with $T_2^{*}=3\,\mu\mathrm{s}$ and shot noise for 2000 repetitions. These are synthetic
 examples, not a device measurement. Screen is interactive. Print is static.
-The page's light or dark mode selects the matching figure.
+The page's light or dark mode selects the matching figure. The four traces
+use the Embla palette for five or fewer series.
 
 ## Screen
 
 ```{python}
 #| renderings: [light, dark]
-from review import for_renderings, lines, show
+from review import display_figure, for_renderings, lines, show
 
 for_renderings(lambda appearance: show(lines(), reading="screen", appearance=appearance))
 ```
@@ -26,4 +29,41 @@ for_renderings(lambda appearance: show(lines(), reading="screen", appearance=app
 ```{python}
 #| renderings: [light, dark]
 for_renderings(lambda appearance: show(lines(), reading="print", appearance=appearance))
+```
+
+## Dense lines and markers
+
+Analytical functions illustrate overlapping lines and markers. These are not
+measurements. Colors cycle when there are more series than colors in the sequence.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+from gallery import show as show_candidate
+for_renderings(lambda mode: show_candidate("dense", mode))
+```
+
+## Pulse sequence
+
+A schematic 40 ns interaction window. The vertical axis indicates relative
+frequency only. The legend sits on the right in wide containers and below
+the plot, aligned left, in narrow containers.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+from quantum import pulse, curves
+from design import CONFIG
+for_renderings(lambda mode: display_figure(pulse(dark=mode == "dark"), config=CONFIG))
+```
+
+## Decay envelopes
+
+A family of analytical decay envelopes illustrates the color sequence. These
+are illustrative curves, not measurements from the report.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for_renderings(lambda mode: display_figure(curves(dark=mode == "dark"), config=CONFIG))
 ```

@@ -1,0 +1,244 @@
+---
+title: "Usage Tutorial"
+subtitle: "Copy the shared layout recipe and interaction config into your Plotly figures"
+jupyter: python3
+---
+
+Copy the recipe below into your own `design.py`, then call
+`apply_layout(fig, appearance="light", colors=5, kind="cartesian")` after setting
+the figure's title and axes. The recipe remains a **CONVERGING** candidate;
+it carries no package installation or stable API commitment. Each figure author
+owns data, units, axis ranges, geometry, and scientific meaning.
+
+## Copy the recipe
+
+This section reads the current `outputs/design.py`, so the displayed source and
+the executed examples share one authority. `template(appearance, colors=5)` sets
+appearance defaults such as colors and typography. `apply_layout` applies those
+defaults and controls actual figure layout, returning the same figure.
+
+Choose `appearance="light"` or `"dark"`, and `colors=5`, `10`, or `20`.
+The supported layout kinds are `cartesian`, `heatmap`, `three-d`, `diagram`,
+`table`, and `pulse`. Set titles and content before applying layout so the recipe
+can account for them.
+
+The shared paper backgrounds are `#FAF8F8` and `#161618`; plot backgrounds are
+`#FFFFFF` and `#202023`. Title text is 22 px, axis titles 18 px, and ticks and
+legends 16 px. Layout uses 16 px outer padding and 15 px axis-title standoff.
+Text estimates and native axis `automargin` help allocate consistent padding
+around visible ink. Exact figure margins can vary to accommodate legends,
+colorbars, and controls. Below a 540 px container width, the ordinary chart toolbar is vertical and
+positioned below the title; wider charts retain a horizontal toolbar.
+The default legend is horizontal below the plot;
+the pulse example uses its container-specific rule described below.
+
+For ordinary plots, the shared layout carries `layout.meta.embla_sizing` with
+the base height, estimated legend-item widths, row height, and side margins.
+The maintained observer uses the actual container width to estimate wrapped
+legend rows and increases figure height by `(rows - 1) * rowHeight`, preserving
+space for the plot. Pulse figures use their separate responsive profiles instead.
+The same observer handles ordinary plot sizing, pulse layout, and resize/redraw
+when hidden 3D panels become visible.
+
+The three categorical sequences follow an indigo-to-red family. Light mode uses
+bright purple, cyan, green, yellow, and warm orange-red. The recipe samples linear
+RGB interpolation between six reference colors at equal intervals. A sequence
+need not include every reference color: the five-color midpoint falls between
+green and yellow. See [Colors](outputs/themes.qmd) for swatches and cycling
+examples with 7, 12, and 22 curves.
+
+```{python}
+#| echo: false
+#| output: asis
+from pathlib import Path
+
+recipe_path = Path("outputs/design.py")
+print("```python\n" + recipe_path.read_text(encoding="utf-8") + "\n```")
+```
+
+## Build and display a figure
+
+This example computes six sine and cosine curves to illustrate appearance.
+They are not device measurements. `x` is a phase parameter; sampling is specific
+to this plotting example. Switch the page appearance to compare matching figures.
+
+The executed documentation uses `review.display_figure`, a small HTML display
+adapter that disables Plotly's MathJax injection and leaves Quarto as the page's
+sole math engine. In a standalone notebook or HTML export, use native
+`fig.show(config=CONFIG)` or `write_html` as shown below.
+
+```{python}
+import math
+import sys
+from pathlib import Path
+
+import plotly.graph_objects as go
+
+# In this documentation checkout, the recipe lives in outputs/.
+# If design.py is beside your notebook, import it directly instead.
+sys.path.insert(0, str(Path("outputs").resolve()))
+from design import CONFIG, SEQUENCES, apply_layout
+from review import display_figure
+
+x = [2 * math.pi * index / 240 for index in range(241)]
+series = [
+    ("cos(x)", [math.cos(value) for value in x]),
+    ("sin(x)", [math.sin(value) for value in x]),
+    ("cos(2x)", [math.cos(2 * value) for value in x]),
+    ("sin(2x)", [math.sin(2 * value) for value in x]),
+    ("cos(x + π/4)", [math.cos(value + math.pi / 4) for value in x]),
+    ("sin(x + π/4)", [math.sin(value + math.pi / 4) for value in x]),
+]
+```
+
+```{python}
+#| renderings: [light, dark]
+for appearance in ("light", "dark"):
+    fig = go.Figure()
+    for name, values in series:
+        fig.add_trace(go.Scatter(x=x, y=values, name=name, mode="lines"))
+    fig.update_layout(
+        title="Analytical trigonometric curves",
+        xaxis_title="Phase parameter x (rad)",
+        yaxis_title="Amplitude (dimensionless)",
+    )
+    apply_layout(fig, appearance, colors=10, kind="cartesian")
+    display_figure(fig, config=CONFIG)
+```
+
+## Choose a sequence and let it cycle
+
+`colors=5` is the default. Plotly's `colorway` cycles when there are more traces
+than colors: traces 6 and 7 of a five-color sequence reuse colors 1 and 2.
+For a twenty-color sequence, traces 21 and 22 reuse colors 1 and 2.
+Sequence length does not limit trace count or automatically change markers
+or line styles.
+
+```{python}
+#| eval: false
+apply_layout(fig, appearance="light", colors=5, kind="cartesian")
+fig.show(config=CONFIG)
+apply_layout(fig, appearance="dark", colors=20, kind="cartesian")
+fig.show(config=CONFIG)
+```
+
+## Keep series colors consistent
+
+`colorway` assigns colors in trace order. For comparisons across figures, assign
+named series to explicit positions in a sequence. A paired comparison can use
+the same color for one system and solid/dashed lines for two conditions; explain
+that mapping in the legend. Here cosine and sine are two illustrative families,
+with line styles distinguishing their fundamental and second harmonics.
+
+```{python}
+appearance = "light"  # Choose "dark" for a dark presentation.
+series_colors = {"Cosine": SEQUENCES[appearance][5][0],
+                 "Sine": SEQUENCES[appearance][5][1]}
+paired_fig = go.Figure()
+for family, function in (("Cosine", math.cos), ("Sine", math.sin)):
+    for harmonic, dash in ((1, "solid"), (2, "dash")):
+        paired_fig.add_trace(go.Scatter(
+            x=x, y=[function(harmonic * value) for value in x],
+            name=f"{family} · harmonic {harmonic}", mode="lines",
+            line={"color": series_colors[family], "dash": dash},
+        ))
+_ = paired_fig.update_layout(xaxis_title="Phase parameter x (rad)",
+                             yaxis_title="Amplitude (dimensionless)")
+_ = apply_layout(paired_fig, appearance, colors=5, kind="cartesian")
+```
+
+## Separate layout from interaction config
+
+`apply_layout` sets figure layout; `CONFIG` contains display and HTML interaction
+options. Pass it at each display or export to use consistent toolbar and zoom
+behavior. `responsive` adapts the figure to its container; `scrollZoom=False`
+prevents wheel scrolling from zooming the chart while reading the page.
+
+```{python}
+#| eval: false
+paired_fig.show(config=CONFIG)
+html = paired_fig.to_html(config=CONFIG, include_plotlyjs=True, full_html=True)
+Path("figure.html").write_text(html, encoding="utf-8")
+```
+
+## Reuse pulse and Bloch container interactions
+
+These interactions remain **CONVERGING** candidates. `outputs/quantum.py` owns
+the pulse and Bloch data, geometry, and animation frames. The shared layout recipe
+does not construct these objects. Bring `quantum.py`, `design.py`, and the
+maintained JavaScript below into a project when reusing these examples; adapt
+the geometry to your model.
+
+For `kind="pulse"`, `apply_layout` serializes
+`layout.meta.embla_responsive` with `breakpoint`, `narrow`, and `wide` layouts.
+The maintained JavaScript reads those settings and observes the chart container:
+below 540 px, the legend is horizontal below the plot and aligned left; at least
+540 px, it is vertical on the right. The figure carries its layout settings,
+including margins; the observer applies them without separate JavaScript margin
+constants. This example uses container width rather than screen width.
+
+Bloch figures carry `layout.meta.embla_kind="bloch"`. Their 65 frames are named
+`"0"` through `"64"`, matching the first slider's 65 steps. Playback uses native
+`redraw=True`. Reference controls have a light-blue background and dark text,
+with `showactive=False` disabling selected-button styling. Each `go.Frame`
+contains vector data and `layout=dict(sliders=[dict(active=i)])`, so the same
+native frame updates geometry and slider state. When adapting this example,
+align `active=i` with your step order and point each step to its named frame.
+
+The JavaScript handles container layout and resize/WebGL redraw when hidden
+panels become visible. An immediately invoked function initializes observation;
+`MutationObserver` discovers lazily initialized chart panels. Native animation
+frames manage the playback slider state.
+
+The following block reads the current `outputs/quantum-view.html`. Removing its
+HTML script wrapper makes the same maintained content available to `post_script`.
+
+```{python}
+#| echo: false
+#| output: asis
+interaction_source = Path("outputs/quantum-view.html").read_text(encoding="utf-8").strip()
+script = interaction_source.removeprefix("<script>").removesuffix("</script>").strip()
+print("```javascript\n" + script + "\n```")
+```
+
+For standalone HTML, use the example figure builders. `write_html` loads Plotly
+and completes `Plotly.newPlot` before running `post_script`. The observer recipe
+immediately discovers plots, then repeats discovery on relevant DOM changes
+and page load.
+
+```{python}
+#| eval: false
+from pathlib import Path
+from quantum import pulse, bloch
+
+interaction_source = Path("outputs/quantum-view.html").read_text(encoding="utf-8").strip()
+script = interaction_source.removeprefix("<script>").removesuffix("</script>").strip()
+
+for filename, example, kind in (("pulse.html", pulse, "pulse"),
+                                ("bloch.html", bloch, "three-d")):
+    figure = example(style="reference", dark=True)
+    apply_layout(figure, appearance="dark", kind=kind)
+    figure.write_html(filename, config=CONFIG, include_plotlyjs=True,
+                      full_html=True, post_script=script)
+```
+
+This export example does not write extra HTML files during tutorial rendering.
+See [Lines](outputs/lines.qmd) and [3D](outputs/three-d.qmd) for the browser-visible
+legend and animation behavior.
+
+## Choose layout for the figure type
+
+Use `kind="heatmap"`, `"three-d"`, `"diagram"`, `"table"`, or `"pulse"` for those
+figure types; ordinary lines and bars use `"cartesian"`. The figure still owns
+camera choice, axis ranges, aspect ratios, shapes, and annotations. See
+[3D](outputs/three-d.qmd), [Diagrams](outputs/diagrams.qmd), and
+[Lines](outputs/lines.qmd) for complete examples.
+
+Heatmaps of numerical values use a continuous `colorscale`. Categorical
+`SEQUENCES` distinguish named series and do not encode numerical magnitude.
+Choose the scale, colorbar units, normalization, and numerical range explicitly
+for the data.
+
+See Plotly's official [template documentation](https://plotly.com/python/templates/)
+and [configuration documentation](https://plotly.com/python/configuration-options/)
+for native options.

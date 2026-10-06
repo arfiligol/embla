@@ -6,9 +6,13 @@ jupyter: python3
 
 Each scale is its own figure. The chevron is the driven two-level population
 
-P = (Ω² / Ω_R²) sin²(Ω_R t / 2) exp(−Γ t), Ω_R = √(Ω² + δ²),
+$$
+P(t)=\frac{\Omega^2}{\Omega_R^2}\sin^2\!\left(\frac{\Omega_R t}{2}\right)
+\exp(-\Gamma t),\qquad \Omega_R=\sqrt{\Omega^2+\delta^2}.
+$$
 
-with Ω/2π = 20 MHz and shot noise. ⟨Z⟩ = 1 − 2P uses a diverging scale.
+with $\Omega/(2\pi)=20\,\mathrm{MHz}$ and shot noise.
+$\langle Z\rangle=1-2P$ uses a diverging scale.
 Synthetic example, not a measurement. The page mode selects the matching figure.
 
 ## Screen
@@ -46,4 +50,16 @@ for_renderings(lambda appearance: show(heatmap("Rabi chevron"), reading="print",
 ```{python}
 #| renderings: [light, dark]
 for_renderings(lambda appearance: show(heatmap("⟨Z⟩ chevron"), reading="print", appearance=appearance))
+```
+
+## Analytical diverging field
+
+The analytical function sin(x) cos(y) uses Plotly's native RdBu scale, centered
+at the function's zero value.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+from gallery import show as show_candidate
+for_renderings(lambda mode: show_candidate("heatmap", mode))
 ```

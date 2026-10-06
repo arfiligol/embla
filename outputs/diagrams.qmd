@@ -1,0 +1,55 @@
+---
+title: "Diagrams"
+subtitle: "Control timelines and physical concept diagrams"
+jupyter: python3
+page-layout: full
+toc: false
+---
+
+Embla's demo scope includes scientific schematics: channel timelines, annotated
+waveforms, spectra, state symbols, and arrows linking physical concepts. These
+examples use editable Plotly traces, shapes, and labels.
+
+```{=html}
+<style>
+#quarto-document-content { max-width: none; width: 100%; }
+.cell-output-display { overflow-x: auto; max-width: 100%; }
+.cell-output-display .js-plotly-plot { min-width: 800px; }
+</style>
+```
+
+```{python}
+#| include: false
+from schematics import control_sequence, photon_diagram
+from review import display_figure, for_renderings
+def show_diagram(fig):
+    fig.update_layout(width=800, autosize=False)
+    display_figure(fig, config={"displayModeBar": False, "responsive": False})
+```
+
+## Control timeline
+
+Five channels show two swaps, a reset, and phase compensation. Block positions
+and gaps are schematic; the 40 ns text labels an example pulse only. Horizontal
+scroll preserves readable labels on narrow screens.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for_renderings(lambda mode: show_diagram(control_sequence(dark=mode == "dark")))
+```
+
+## Wave packet and receiver
+
+A spectrum, a rising temporal envelope, a propagation path, and a two-level
+receiver share one diagram. Λ and Γ are concept labels, not fitted parameters.
+No device measurement or quantitative spectrum–envelope equivalence is claimed.
+
+```{python}
+#| echo: false
+#| renderings: [light, dark]
+for_renderings(lambda mode: show_diagram(photon_diagram(dark=mode == "dark")))
+```
+
+See [3D](three-d.qmd) for Bloch sphere animations and [Lines](lines.qmd) for
+pulse sequences.

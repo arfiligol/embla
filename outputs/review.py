@@ -11,272 +11,21 @@ import math
 import random
 
 import plotly.graph_objects as go
+from design import SEQUENCES
 
-FONT = '"Source Sans 3", "PingFang TC", "Noto Sans TC", sans-serif'
+from design import (CHROME, CONFIG, FONT, METRICS, OUTER, STANDOFF,
+                    TITLE_LEADING, TITLE_DESCENT, apply_layout, _frame, _text_px)
 
-# Quarto Design Kit page colors, so a figure is not a white card on the page.
-LIGHT = {
-    "paper": "#faf8f8",
-    "text": "#2b2b2b",
-    "muted": "#5e5e5e",
-    "axis": "#c8c8c8",
-    "grid": "#e5e5e5",
-    "colorway": ["#315E7D", "#4F8765", "#A36A43", "#746799", "#427D82", "#A0843D", "#9C5D6A", "#657080"],
-}
-DARK = {
-    "paper": "#161618",
-    "text": "#ebebec",
-    "muted": "#b8b8b8",
-    "axis": "#4a4a4e",
-    "grid": "#393639",
-    "colorway": ["#7DA9C4", "#86B396", "#C59A77", "#A79CC4", "#81B1B4", "#C3AF70", "#C28B97", "#A7B0BC"],
-}
-
-# Quarto Design Kit: body 16px, level-3 heading 18px, level-2 heading 22px.
-# Tick numbers follow body. Axis titles follow level 3. The figure title follows level 2.
-SCREEN = {"tick": 16, "axis": 18, "legend": 16, "title": 22}
-PRINT = {"tick": 16, "axis": 18, "legend": 16, "title": 22}
-
-# Diagram ink to the image edge.
-OUTER = 16
-STANDOFF = 15
-# Empty line-box above the title letters, and ink below the baseline, at 22px.
-# The gap under the title uses these so it matches the gap above the letters.
-TITLE_LEADING = 8
-TITLE_DESCENT = 5
-# Colorbar padding between the heatmap and the bar.
-COLORBAR_XPAD = 10
-# Pixels from the plot edge to the colorbar numbers at that padding.
-COLORBAR_BEFORE_TICKS = 53
+LIGHT, DARK = CHROME["light"], CHROME["dark"]
+SCREEN = PRINT = METRICS
 
 
 def apply(fig: go.Figure, *, reading: str, appearance: str) -> go.Figure:
-    colors = {"light": LIGHT, "dark": DARK}[appearance]
-    metrics = {"screen": SCREEN, "print": PRINT}[reading]
-    fig.update_layout(
-        font={"family": FONT, "size": metrics["tick"], "color": colors["text"]},
-        paper_bgcolor=colors["paper"],
-        plot_bgcolor=colors["paper"],
-        colorway=colors["colorway"],
-        title_font={"family": FONT, "size": metrics["title"], "color": colors["text"]},
-        legend_font={"family": FONT, "size": metrics["legend"], "color": colors["text"]},
-        hovermode="x unified" if reading == "screen" else False,
-        hoverlabel={
-            "font": {"family": FONT, "size": metrics["tick"], "color": colors["text"]},
-            "bgcolor": colors["paper"],
-            "bordercolor": colors["axis"],
-        },
-    )
-    styled_axis = {
-        "title_font": {"family": FONT, "size": metrics["axis"], "color": colors["text"]},
-        "tickfont": {"family": FONT, "size": metrics["tick"], "color": colors["muted"]},
-        "gridcolor": colors["grid"],
-        "linecolor": colors["axis"],
-        "tickcolor": colors["axis"],
-        "zeroline": False,
-        "automargin": True,
-        "title_standoff": STANDOFF,
-    }
-    fig.update_xaxes(**styled_axis)
-    fig.update_yaxes(**styled_axis)
     _share_origin(fig)
-    for trace in fig.data:
-        colorbar = getattr(trace, "colorbar", None)
-        if colorbar is None:
-            continue
-        colorbar.tickfont = {"family": FONT, "size": metrics["tick"], "color": colors["muted"]}
-        colorbar.xpad = COLORBAR_XPAD
-        colorbar.thickness = 30
-        if colorbar.title:
-            colorbar.title.font = {"family": FONT, "size": metrics["axis"], "color": colors["text"]}
-    _frame(fig, metrics)
-    fig.update_annotations(font={"family": FONT, "size": metrics["axis"], "color": colors["text"]})
+    kind = "heatmap" if any(trace.type == "heatmap" for trace in fig.data) else "cartesian"
+    apply_layout(fig, appearance, kind=kind)
+    fig.update_layout(hovermode="x unified" if reading == "screen" else False)
     return fig
-
-
-def _text_px(text: str, size: int) -> int:
-    """Source Sans 3 width. ponytail: average advances, not the real font.
-
-    Ceiling: a much wider glyph, such as CJK, is underestimated and automargin
-    then eats OUTER. Upgrade path: measure the font.
-    """
-    width = 0.0
-    for ch in text:
-        if ch.isdigit():
-            width += 0.50
-        elif ch == ".":
-            width += 0.25
-        elif ch == " ":
-            width += 0.28
-        elif ch == "/":
-            width += 0.33
-        elif ch in "()":
-            width += 0.35
-        else:
-            width += 0.53
-    return math.ceil(width * size)
-
-
-def _nice_step(span: float) -> float:
-    raw = span / 5 if span else 1
-    exp = math.floor(math.log10(raw)) if raw > 0 else 0
-    frac = raw / 10**exp
-    nice = 1 if frac <= 1 else 2 if frac <= 2 else 5 if frac <= 5 else 10
-    return nice * 10**exp
-
-
-def _fmt_tick(value: float, step: float) -> str:
-    if abs(value) < 1e-8:
-        value = 0.0
-    if step >= 1 and abs(value - round(value)) < 1e-6:
-        return str(int(round(value)))
-    decimals = max(0, -math.floor(math.log10(step))) if step > 0 else 0
-    return f"{value:.{decimals}f}"
-
-
-def _span(fig: go.Figure, axis: str) -> tuple[float, float] | None:
-    ax = fig.layout[axis]
-    if ax.range is not None:
-        return float(ax.range[0]), float(ax.range[1])
-    attr = "x" if axis.startswith("x") else "y"
-    values: list[float] = []
-    for trace in fig.data:
-        if getattr(trace, "type", None) == "heatmap":
-            values.extend(_numbers(getattr(trace, attr)))
-        else:
-            values.extend(_numbers(getattr(trace, attr, None)))
-    if not values:
-        return None
-    return min(values), max(values)
-
-
-def _tick_width(fig: go.Figure, axis: str, size: int) -> int:
-    span = _span(fig, axis)
-    if span is None:
-        return 0
-    lo, hi = span
-    step = _nice_step(hi - lo)
-    start = math.ceil(lo / step - 1e-9) * step
-    labels = []
-    value = start
-    while value <= hi + step * 1e-6 and len(labels) < 12:
-        labels.append(_fmt_tick(value, step))
-        value += step
-    if not labels:
-        return 0
-    return max(_text_px(label, size) for label in labels)
-
-
-def _left_ink(fig: go.Figure, metrics: dict) -> int:
-    # 4px axis-to-tick, then the tick label, standoff, then the rotated title box.
-    ink = 4 + _tick_width(fig, "yaxis", metrics["tick"])
-    if fig.layout.yaxis.title and fig.layout.yaxis.title.text:
-        ink += STANDOFF + (metrics["axis"] + 6)
-    return ink
-
-
-def _bottom_ink(fig: go.Figure, metrics: dict) -> int:
-    ink = 4 + (metrics["tick"] + 5)
-    if fig.layout.xaxis.title and fig.layout.xaxis.title.text:
-        ink += 9 + (metrics["axis"] + 6)
-    return ink
-
-
-def _legend_names(fig: go.Figure) -> list[str]:
-    if fig.layout.showlegend is False:
-        return []
-    names = []
-    for trace in fig.data:
-        if getattr(trace, "type", None) == "heatmap":
-            continue
-        if trace.showlegend is False or not getattr(trace, "name", None):
-            continue
-        names.append(trace.name)
-    return names
-
-
-def _z_tick_width(trace, size: int) -> int:
-    values = [float(item) for row in trace.z for item in row]
-    if not values:
-        return 0
-    lo, hi = min(values), max(values)
-    step = _nice_step(hi - lo)
-    start = math.ceil(lo / step - 1e-9) * step
-    labels = []
-    value = start
-    while value <= hi + step * 1e-6 and len(labels) < 12:
-        labels.append(_fmt_tick(value, step))
-        value += step
-    if not labels:
-        return 0
-    return max(_text_px(label, size) for label in labels)
-
-
-def _place_legend(fig: go.Figure) -> None:
-    """Horizontal legend under the plot. Plotly grows the bottom margin when it wraps."""
-    if not _legend_names(fig):
-        return
-    fig.update_layout(legend={
-        "orientation": "h",
-        "yanchor": "top",
-        "y": -0.28,
-        "xanchor": "left",
-        "x": 0,
-        "xref": "paper",
-        "yref": "paper",
-        "bgcolor": "rgba(0,0,0,0)",
-        "borderwidth": 0,
-    })
-
-
-def _right_margin(fig: go.Figure, metrics: dict) -> int:
-    stacks = []
-    for trace in fig.data:
-        if getattr(trace, "type", None) == "heatmap" and trace.showscale is not False:
-            stacks.append(_z_tick_width(trace, metrics["tick"]) + COLORBAR_BEFORE_TICKS + OUTER)
-    if not stacks:
-        stacks.append(_tick_width(fig, "xaxis", metrics["tick"]) // 2 + OUTER)
-    return max(stacks)
-
-
-def _frame(fig: go.Figure, metrics: dict, color: str | None = None) -> None:
-    """Pad the diagram ink from the image edge. The modebar is not part of that ink."""
-    _place_legend(fig)
-    _title_inside(fig, size=metrics["title"], color=color)
-    text = fig.layout.title.text if fig.layout.title else None
-    title_gap = OUTER + TITLE_LEADING + TITLE_DESCENT
-    top = OUTER + metrics["title"] + title_gap if text else OUTER
-    fig.update_layout(
-        margin={
-            "l": _left_ink(fig, metrics) + OUTER,
-            "r": _right_margin(fig, metrics),
-            "t": top,
-            "b": _bottom_ink(fig, metrics) + OUTER,
-            "autoexpand": True,
-        },
-        title_automargin=False,
-    )
-
-
-def _title_inside(fig: go.Figure, *, size: int, color: str | None = None) -> None:
-    """Keep the title inside the diagram, above the plot."""
-    text = fig.layout.title.text if fig.layout.title else None
-    if not text:
-        return
-    font = {"family": FONT, "size": size, "color": color or fig.layout.title.font.color}
-    fig.update_layout(
-        title={
-            "text": text,
-            "font": font,
-            "xref": "container",
-            "x": 0,
-            "xanchor": "left",
-            "yref": "paper",
-            "y": 1,
-            "yanchor": "bottom",
-            "pad": {"b": OUTER + TITLE_LEADING + TITLE_DESCENT, "l": OUTER, "t": 0},
-        },
-    )
 
 
 def _shot(rng: random.Random, p: float, n: int = 2000) -> float:
@@ -313,6 +62,517 @@ def _share_origin(fig: go.Figure) -> None:
         fig.update_yaxes(range=[0, hi])
 
 
+# name -> appearance -> paper, plot, ink, muted, axis, grid
+THEME_CHROME = {
+    "Embla": {
+        "light": {"paper": "#faf8f8", "plot": "#faf8f8", "ink": "#2b2b2b", "muted": "#5e5e5e", "axis": "#c8c8c8", "grid": "#e5e5e5"},
+        "dark": {"paper": "#161618", "plot": "#161618", "ink": "#ebebec", "muted": "#b8b8b8", "axis": "#4a4a4e", "grid": "#393639"},
+    },
+    "Tech Slate": {
+        "light": {"paper": "#F7FAFC", "plot": "#EAF1F8", "ink": "#1F2937", "muted": "#66758A", "axis": "#D5E0EA", "grid": "#D5E0EA"},
+        "dark": {"paper": "#101722", "plot": "#223146", "ink": "#EDF4FB", "muted": "#A9B8C9", "axis": "#34465F", "grid": "#34465F"},
+    },
+    "Spring Glass": {
+        "light": {"paper": "#FBFFFB", "plot": "#EDF9EC", "ink": "#1F3428", "muted": "#647B68", "axis": "#D7EAD6", "grid": "#D7EAD6"},
+        "dark": {"paper": "#121A15", "plot": "#23342A", "ink": "#EDF5EC", "muted": "#B2C3B1", "axis": "#3B5141", "grid": "#3B5141"},
+    },
+    "Nordic Calm": {
+        "light": {"paper": "#FBFEFC", "plot": "#EAF8F2", "ink": "#20313A", "muted": "#62787D", "axis": "#CDE7DE", "grid": "#CDE7DE"},
+        "dark": {"paper": "#111821", "plot": "#203244", "ink": "#E7F0F5", "muted": "#A9BBC4", "axis": "#354A5A", "grid": "#354A5A"},
+    },
+    "Coffee Terminal": {
+        "light": {"paper": "#FFFAF3", "plot": "#F4EADF", "ink": "#30271F", "muted": "#74665B", "axis": "#E3D4C4", "grid": "#E3D4C4"},
+        "dark": {"paper": "#17120F", "plot": "#32251D", "ink": "#F3EBE1", "muted": "#C5B6A6", "axis": "#4A3A2F", "grid": "#4A3A2F"},
+    },
+}
+
+LINE_PALETTE_BANDS = {"6": "Six colors", "8": "Eight colors", "10": "Ten colors"}
+
+# Matplotlib tab10, exposed by Plotly as D3. Same cycle as the built-in scales
+# used on the heatmaps. On the light plot, colors that fall under 3:1 are one
+# step darker in the same hue.
+THEME_LINES: dict = {
+    "Embla": {
+        "light": {
+            "6": {
+                "colors": [
+                    "#1F77B4",
+                    "#E36A00",
+                    "#2CA02C",
+                    "#D62728",
+                    "#9467BD",
+                    "#8C564B"
+                ],
+                "minContrast": 3.1
+            },
+            "8": {
+                "colors": [
+                    "#1F77B4",
+                    "#E36A00",
+                    "#2CA02C",
+                    "#D62728",
+                    "#9467BD",
+                    "#8C564B",
+                    "#C96AAD",
+                    "#7F7F7F"
+                ],
+                "minContrast": 3.1
+            },
+            "10": {
+                "colors": [
+                    "#1F77B4",
+                    "#E36A00",
+                    "#2CA02C",
+                    "#D62728",
+                    "#9467BD",
+                    "#8C564B",
+                    "#C96AAD",
+                    "#7F7F7F",
+                    "#8C8E14",
+                    "#149AAB"
+                ],
+                "minContrast": 3.1
+            }
+        },
+        "dark": {
+            "6": {
+                "colors": [
+                    "#1F77B4",
+                    "#FF7F0E",
+                    "#2CA02C",
+                    "#D62728",
+                    "#9467BD",
+                    "#8C564B"
+                ],
+                "minContrast": 8.48
+            },
+            "8": {
+                "colors": [
+                    "#1F77B4",
+                    "#FF7F0E",
+                    "#2CA02C",
+                    "#D62728",
+                    "#9467BD",
+                    "#8C564B",
+                    "#E377C2",
+                    "#7F7F7F"
+                ],
+                "minContrast": 8.11
+            },
+            "10": {
+                "colors": [
+                    "#1F77B4",
+                    "#FF7F0E",
+                    "#2CA02C",
+                    "#D62728",
+                    "#9467BD",
+                    "#8C564B",
+                    "#E377C2",
+                    "#7F7F7F",
+                    "#BCBD22",
+                    "#17BECF"
+                ],
+                "minContrast": 8.14
+            }
+        }
+    },
+    "Tech Slate": {
+        "light": {
+            "6": {
+                "colors": [
+                    "#305888",
+                    "#106078",
+                    "#505090",
+                    "#5078A8",
+                    "#2080A0",
+                    "#7070B8"
+                ],
+                "minContrast": 3.92
+            },
+            "8": {
+                "colors": [
+                    "#006070",
+                    "#185880",
+                    "#385090",
+                    "#585088",
+                    "#388090",
+                    "#4880A8",
+                    "#6078B0",
+                    "#7870B0"
+                ],
+                "minContrast": 3.74
+            },
+            "10": {
+                "colors": [
+                    "#006068",
+                    "#006080",
+                    "#305888",
+                    "#485090",
+                    "#604890",
+                    "#308088",
+                    "#3080A0",
+                    "#5078A8",
+                    "#6870B0",
+                    "#8068B0"
+                ],
+                "minContrast": 3.91
+            }
+        },
+        "dark": {
+            "6": {
+                "colors": [
+                    "#88B0E0",
+                    "#68B8D8",
+                    "#A0A8F0",
+                    "#B0D0F8",
+                    "#88D8F8",
+                    "#C8C8F8"
+                ],
+                "minContrast": 5.85
+            },
+            "8": {
+                "colors": [
+                    "#58C0D8",
+                    "#78B8E8",
+                    "#98B0E8",
+                    "#B0A8E8",
+                    "#80E0F8",
+                    "#B0D8F8",
+                    "#C0D0F8",
+                    "#C8C0F8"
+                ],
+                "minContrast": 6.02
+            },
+            "10": {
+                "colors": [
+                    "#70C0C8",
+                    "#70B8D8",
+                    "#88B0E0",
+                    "#A0A8E8",
+                    "#B8A0F0",
+                    "#90E0E8",
+                    "#98D8F8",
+                    "#B0D0F8",
+                    "#C0C8F8",
+                    "#D0C0F8"
+                ],
+                "minContrast": 5.8
+            }
+        }
+    },
+    "Spring Glass": {
+        "light": {
+            "6": {
+                "colors": [
+                    "#206028",
+                    "#485818",
+                    "#006848",
+                    "#508850",
+                    "#688028",
+                    "#308868"
+                ],
+                "minContrast": 3.89
+            },
+            "8": {
+                "colors": [
+                    "#505808",
+                    "#386020",
+                    "#006838",
+                    "#206050",
+                    "#707828",
+                    "#588040",
+                    "#388858",
+                    "#208870"
+                ],
+                "minContrast": 4.01
+            },
+            "10": {
+                "colors": [
+                    "#605808",
+                    "#486018",
+                    "#206028",
+                    "#086848",
+                    "#286058",
+                    "#807828",
+                    "#688038",
+                    "#508850",
+                    "#188860",
+                    "#008878"
+                ],
+                "minContrast": 3.89
+            }
+        },
+        "dark": {
+            "6": {
+                "colors": [
+                    "#80C080",
+                    "#A0B860",
+                    "#68C8A0",
+                    "#A0E8A0",
+                    "#C0D880",
+                    "#88E8C0"
+                ],
+                "minContrast": 5.96
+            },
+            "8": {
+                "colors": [
+                    "#B0B860",
+                    "#90C070",
+                    "#78C090",
+                    "#50C8A8",
+                    "#D0D880",
+                    "#B0E090",
+                    "#98E8B0",
+                    "#78E8C8"
+                ],
+                "minContrast": 6.1
+            },
+            "10": {
+                "colors": [
+                    "#B8B058",
+                    "#98B860",
+                    "#80C080",
+                    "#68C098",
+                    "#60C0B0",
+                    "#D8D078",
+                    "#C0E088",
+                    "#A0E8A0",
+                    "#80E8B8",
+                    "#90E8D8"
+                ],
+                "minContrast": 5.86
+            }
+        }
+    },
+    "Nordic Calm": {
+        "light": {
+            "6": {
+                "colors": [
+                    "#006850",
+                    "#186030",
+                    "#006060",
+                    "#388870",
+                    "#388850",
+                    "#008888"
+                ],
+                "minContrast": 3.9
+            },
+            "8": {
+                "colors": [
+                    "#286028",
+                    "#086040",
+                    "#006858",
+                    "#006870",
+                    "#508848",
+                    "#288860",
+                    "#108878",
+                    "#008890"
+                ],
+                "minContrast": 3.88
+            },
+            "10": {
+                "colors": [
+                    "#386020",
+                    "#106838",
+                    "#006850",
+                    "#006860",
+                    "#006070",
+                    "#588040",
+                    "#408858",
+                    "#388870",
+                    "#008880",
+                    "#288090"
+                ],
+                "minContrast": 3.9
+            }
+        },
+        "dark": {
+            "6": {
+                "colors": [
+                    "#58C0A0",
+                    "#78C088",
+                    "#58C0C0",
+                    "#88E8C8",
+                    "#98E8A8",
+                    "#78E8E8"
+                ],
+                "minContrast": 5.91
+            },
+            "8": {
+                "colors": [
+                    "#80C078",
+                    "#70C098",
+                    "#68C0B0",
+                    "#60C0C8",
+                    "#A0E098",
+                    "#88E8B8",
+                    "#90E8D8",
+                    "#80E8F0"
+                ],
+                "minContrast": 6.05
+            },
+            "10": {
+                "colors": [
+                    "#90C070",
+                    "#70C088",
+                    "#58C0A0",
+                    "#50C8C0",
+                    "#70C0D0",
+                    "#B0E090",
+                    "#90E8A8",
+                    "#88E8C8",
+                    "#78E8E0",
+                    "#90E0F0"
+                ],
+                "minContrast": 5.91
+            }
+        }
+    },
+    "Coffee Terminal": {
+        "light": {
+            "6": {
+                "colors": [
+                    "#784008",
+                    "#804030",
+                    "#705000",
+                    "#A06028",
+                    "#B05840",
+                    "#907020"
+                ],
+                "minContrast": 3.91
+            },
+            "8": {
+                "colors": [
+                    "#883830",
+                    "#784020",
+                    "#704810",
+                    "#605008",
+                    "#A85850",
+                    "#A86038",
+                    "#986828",
+                    "#807028"
+                ],
+                "minContrast": 4.02
+            },
+            "10": {
+                "colors": [
+                    "#883840",
+                    "#803820",
+                    "#784008",
+                    "#705008",
+                    "#605800",
+                    "#B05860",
+                    "#A85840",
+                    "#A06028",
+                    "#907030",
+                    "#807820"
+                ],
+                "minContrast": 3.82
+            }
+        },
+        "dark": {
+            "6": {
+                "colors": [
+                    "#E09858",
+                    "#F09078",
+                    "#D0A850",
+                    "#F8B880",
+                    "#F8B8A8",
+                    "#F0C870"
+                ],
+                "minContrast": 6.21
+            },
+            "8": {
+                "colors": [
+                    "#F09088",
+                    "#E09870",
+                    "#D8A058",
+                    "#C8B050",
+                    "#F8B0A8",
+                    "#F8B088",
+                    "#F8C078",
+                    "#E8D070"
+                ],
+                "minContrast": 6.27
+            },
+            "10": {
+                "colors": [
+                    "#F08890",
+                    "#F09070",
+                    "#E09858",
+                    "#D0A858",
+                    "#B8B050",
+                    "#F8B0B0",
+                    "#F8B098",
+                    "#F8B880",
+                    "#F0C878",
+                    "#D8D070"
+                ],
+                "minContrast": 6.09
+            }
+        }
+    }
+}
+
+def palette_lines(theme: str, size: str, appearance: str, reading: str = "screen") -> go.Figure:
+    """Offset curves in the theme's own hues, on that plot."""
+    colors = THEME_LINES[theme][appearance][size]["colors"]
+    chrome = THEME_CHROME[theme][appearance]
+    metrics = {"screen": SCREEN, "print": PRINT}[reading]
+    xs = [i / 48 for i in range(49)]
+    fig = go.Figure()
+    for i, color in enumerate(colors):
+        shift = len(colors) - i
+        ys = [shift + 0.28 * math.sin(2 * math.pi * (x * 1.5 + i * 0.015)) for x in xs]
+        fig.add_trace(go.Scatter(
+            x=xs,
+            y=ys,
+            mode="lines",
+            name=str(i + 1),
+            line={"color": color, "width": 2},
+            showlegend=False,
+        ))
+    fig.update_layout(
+        title_text=LINE_PALETTE_BANDS[size],
+        height=150 + 22 * len(colors),
+        showlegend=False,
+        font={"family": FONT, "size": metrics["tick"], "color": chrome["ink"]},
+        paper_bgcolor=chrome["paper"],
+        plot_bgcolor=chrome["plot"],
+        hovermode="closest" if reading == "screen" else False,
+    )
+    styled = {
+        "title_font": {"family": FONT, "size": metrics["axis"], "color": chrome["ink"]},
+        "tickfont": {"family": FONT, "size": metrics["tick"], "color": chrome["muted"]},
+        "gridcolor": chrome["grid"],
+        "linecolor": chrome["axis"],
+        "tickcolor": chrome["axis"],
+        "zeroline": False,
+        "automargin": True,
+        "title_standoff": STANDOFF,
+    }
+    fig.update_xaxes(title_text="t", range=[0, 1], **styled)
+    fig.update_yaxes(showticklabels=len(colors) <= 10, **styled)
+    lo = min(min(trace.y) for trace in fig.data)
+    hi = max(max(trace.y) for trace in fig.data)
+    fig.update_yaxes(range=[lo - 0.4, hi + 0.4])
+    _frame(fig, metrics, color=chrome["ink"])
+    return fig
+
+
+def show_palette(theme: str, size: str, *, reading: str, appearance: str) -> None:
+    fig = palette_lines(theme, size, appearance, reading)
+    config = {"staticPlot": True, "displayModeBar": False} if reading == "print" else CONFIG
+    display_figure(fig, config=config)
+
+
+def display_figure(fig, *, config=CONFIG):
+    """Embed Plotly in Quarto without loading a second document math engine."""
+    from IPython.display import HTML, display
+    display(HTML(fig.to_html(full_html=False, include_plotlyjs="cdn",
+                             include_mathjax=False, auto_play=False, config=config)))
+
+
 def for_renderings(draw) -> None:
     """Draw light, then dark. The cell needs `#| renderings: [light, dark]`."""
     for appearance in ("light", "dark"):
@@ -321,8 +581,8 @@ def for_renderings(draw) -> None:
 
 def show(fig: go.Figure, *, reading: str, appearance: str) -> go.Figure:
     apply(fig, reading=reading, appearance=appearance)
-    config = {"staticPlot": True, "displayModeBar": False} if reading == "print" else {"displaylogo": False}
-    fig.show(config=config)
+    config = {"staticPlot": True, "displayModeBar": False} if reading == "print" else CONFIG
+    display_figure(fig, config=config)
     return fig
 
 
@@ -357,8 +617,8 @@ def bars() -> go.Figure:
     fig = go.Figure()
     fig.add_trace(go.Bar(x=qubits, y=measured_t1, name="measured T1"))
     fig.add_trace(go.Bar(x=qubits, y=measured_t2, name="measured T2*"))
-    fig.add_trace(go.Scatter(x=qubits, y=simulated, mode="markers", name="simulation", marker={"size": 11, "symbol": "square", "color": "#5AB96A"}))
-    fig.add_trace(go.Scatter(x=qubits, y=limit, mode="markers", name="2 T1 limit", marker={"size": 11, "symbol": "diamond", "color": "#B46A3C"}))
+    fig.add_trace(go.Scatter(x=qubits, y=simulated, mode="markers", name="simulation", marker={"size": 11, "symbol": "square"}))
+    fig.add_trace(go.Scatter(x=qubits, y=limit, mode="markers", name="2 T1 limit", marker={"size": 11, "symbol": "diamond"}))
     fig.update_layout(title_text="Coherence", barmode="group")
     fig.update_yaxes(title_text="time (µs)")
     return fig
@@ -416,8 +676,7 @@ def table(appearance: str, reading: str = "screen") -> go.Figure:
             ["13.9", "16.8", "11.5", "21.0"],
         ], "fill_color": colors["paper"], "font": {"family": FONT, "color": colors["text"], "size": metrics["tick"]}, "align": "left", "height": 32 if reading == "screen" else 26, "line_color": colors["grid"]},
     )])
-    fig.update_layout(paper_bgcolor=colors["paper"])
-    return fig
+    return apply_layout(fig, appearance, kind="table")
 
 
 def anchors(appearance: str, reading: str = "screen") -> list[go.Figure]:
@@ -497,6 +756,14 @@ def _check() -> None:
     assert fig.layout.font.size == 16
     assert fig.layout.paper_bgcolor == "#161618"
     assert fig.layout.hovermode is False
+    sample = palette_lines("Embla", "6", "light")
+    assert len(sample.data) == 6
+    assert sample.data[0].line.color == THEME_LINES["Embla"]["light"]["6"]["colors"][0]
+    assert sample.layout.paper_bgcolor == "#faf8f8"
+    dark = palette_lines("Embla", "6", "dark")
+    assert len(dark.data) == 6
+    assert dark.layout.paper_bgcolor == "#161618"
+    assert palette_lines("Embla", "10", "light").data[0].line.color == "#1F77B4"
 
 
 if __name__ == "__main__":
