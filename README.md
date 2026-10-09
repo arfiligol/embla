@@ -12,3 +12,5 @@ Embla owns presentation behavior. Consumer repositories own their scientific dat
 This repository is at the beginning of a **CONVERGING** V1. The Python API, profile names, packaging, and failure behavior have not been selected or accepted. Copyable presentation recipes are available for review; no installed package or release is promised.
 
 Development checkpoints are delivered on `develop`; promotion to `main` is a separate decision. Personal-Presentations records an exact child commit as a submodule pin when its root owner integrates one.
+
+The documentation site uses [Askr 0.7.0](https://github.com/arfiligol/askr/releases/tag/v0.7.0) through the native `askr-html` format. Update the bundled extension with `quarto add arfiligol/askr@v0.7.0`.

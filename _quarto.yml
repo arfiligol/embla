@@ -51,7 +51,7 @@ website:
 lang: en
 
 format:
-  qdk-html:
+  askr-html:
     include-after-body: outputs/quantum-view.html
     toc: true
     toc-title: "Sections"
