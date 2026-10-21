@@ -14,3 +14,13 @@ This repository is at the beginning of a **CONVERGING** V1. The Python API, prof
 Development checkpoints are delivered on `develop`; promotion to `main` is a separate decision. Personal-Presentations records an exact child commit as a submodule pin when its root owner integrates one.
 
 The documentation site uses [Askr 0.8.0](https://github.com/arfiligol/askr/releases/tag/v0.8.0) through the native `askr-html` format. Update the bundled extension with `quarto add arfiligol/askr@v0.8.0`.
+
+## Contributor planning and delivery
+
+External proposals prepared with ChatGPT Pro are optional design input for substantial work. Designate the Embla Lead as the single primary recipient for Embla-only proposals; resolve the responsible owner before editing across repositories. Small, clear fixes need no Pro prerequisite or Plan Mode.
+
+The recipient checks the repository, branch, commit SHA, relevant source, work in progress, current contract, and available tool capabilities, then maintains the current execution plan in the existing work packet. Use Plan Mode to reconcile substantial proposals; if unavailable, keep intake read-only and request the mode change.
+
+Under standing authorization, the original Git owner closes ordinary work by running the existing required checks, committing only the assigned changes to `develop`, pushing, and reading back the remote SHA. Report the repository, branch, full commit SHA, changed paths, check results, and pending items. If nothing changed, report that outcome without an empty commit.
+
+Promotion to `main`, deployment, tags, releases, and root submodule pins require separate authorization.
